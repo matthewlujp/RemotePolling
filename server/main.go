@@ -35,7 +35,7 @@ func statusGetHandler(c echo.Context) error {
 
 func statusSetHandler(c echo.Context) error {
 	var status PollingStatus
-	if err := c.Bind(status); err != nil {
+	if err := c.Bind(&status); err != nil {
 		logger.Printf("on status set, bind status json to structure failed, %s", err)
 		return c.String(http.StatusInternalServerError, fmt.Sprint(err))
 	}
