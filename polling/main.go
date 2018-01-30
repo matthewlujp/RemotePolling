@@ -13,8 +13,11 @@ import (
 )
 
 const (
-	Dead                    = "dead"
-	ConnectionDead          = "connection_dead"
+	// Dead critical state at which reboot is recommended
+	Dead = "dead"
+	// ConnectionDead state at which commuication is lost
+	ConnectionDead = "connection_dead"
+	// NoAccessToPollingServer state at which polling is failing
 	NoAccessToPollingServer = "no_access"
 )
 
@@ -41,7 +44,7 @@ func main() {
 
 func pollingTimer(ch chan struct{}) {
 	go func() {
-		ticker := time.NewTicker(10 * time.Second) // 1秒間隔のTicker
+		ticker := time.NewTicker(1 * time.Minute)
 
 		for {
 			select {
@@ -58,6 +61,11 @@ func isTimeToCheck(time time.Time) bool {
 	return true
 }
 
+func getScriptsDir() string {
+	_, filename, _, _ := runtime.Caller(1)
+	return path.Join(path.Dir(filename), "scripts")
+}
+
 func polling() {
 	logger.Printf("exec polling %v", time.Now())
 
@@ -66,19 +74,19 @@ func polling() {
 
 	if status == NoAccessToPollingServer || status == Dead {
 		// reboot
-		logger.Print("exec reboot")
-
-		_, filename, _, _ := runtime.Caller(1)
-		shellPath := path.Join(path.Dir(filename), "scripts", "reboot.sh")
-		logger.Printf("exec %s", shellPath)
-
-		if err := exec.Command(shellPath).Run(); err != nil {
-			logger.Printf("script exec, %s", err)
+		execPath := path.Join(getScriptsDir(), "reboot.sh")
+		logger.Printf("exec reboot, path: %s", execPath)
+		if err := exec.Command(execPath).Run(); err != nil {
+			logger.Printf("script %s exec, %s", execPath, err)
 		}
 
 	} else if status == ConnectionDead {
-		logger.Printf("connection is dead")
 		// restart ssh
+		execPath := path.Join(getScriptsDir(), "restart_ssh_tunnel.sh")
+		logger.Printf("exec %s", execPath)
+		if err := exec.Command(execPath).Run(); err != nil {
+			logger.Printf("script %s exec, %s", execPath, err)
+		}
 	}
 }
 
