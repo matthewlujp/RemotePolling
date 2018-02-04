@@ -7,9 +7,6 @@ import (
 // StatusKey to save status
 const StatusKey string = "Status"
 
-// StatusNormal status returned when normal
-const StatusNormal = "normal"
-
 func newRedisClient() *redis.Client {
 	return redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",

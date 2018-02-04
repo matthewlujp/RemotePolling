@@ -9,6 +9,9 @@ import (
 	"github.com/labstack/echo"
 )
 
+// StatusNormal status returned when normal
+const StatusNormal = "normal"
+
 // PollingStatus object to return on polling
 type PollingStatus struct {
 	Status string `json:"status"`
@@ -21,11 +24,25 @@ var (
 func main() {
 	e := echo.New()
 	e.GET("/status", statusGetHandler)
+	e.GET("/status-check", statusCheckHandler)
 	e.POST("/status", statusSetHandler)
 	e.Logger.Fatal(e.Start(":9000"))
 }
 
 func statusGetHandler(c echo.Context) error {
+	status, err := readStatus()
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+	// reset to normal status
+	if err = writeStatus(StatusNormal); err != nil {
+		return c.JSON(http.StatusInternalServerError, &PollingStatus{Status: status})
+	}
+	return c.JSON(http.StatusOK, &PollingStatus{Status: status})
+}
+
+// statusCheckHandler only returns current status but do not reset to StatusNormal
+func statusCheckHandler(c echo.Context) error {
 	status, err := readStatus()
 	if err != nil {
 		return c.NoContent(http.StatusInternalServerError)
